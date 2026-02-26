@@ -19,23 +19,14 @@ export interface Newsletter {
 // The FIRST item in this array is displayed on the homepage.
 export const newsletters: Newsletter[] = [
   {
-    id: "issue-2",
-    title: "The Dispatch",
-    date: "January 2026",
-    issue: 2,
-    description: "Our January edition — new year perspectives, reader highlights, and the stories that defined the month.",
-    pdfPath: "/newsletters/issue-2.pdf",
-    coverColor: "#2C5F6C",
-  },
-  {
     id: "issue-1",
-    title: "The Dispatch",
-    date: "December 2025",
+    title: "Foundations of Leadership",
+    date: "March 2026",
     issue: 1,
-    description: "The very first issue — where it all began. Founder's note, inaugural stories, and our vision for what's ahead.",
+    description: "Our inaugural issue highlights the NCO Development Weekend, L98A2 Shooting at RAF Shawbury, Duke of Edinburgh training, archery excellence, and major progress in road marching — showcasing leadership, resilience, and growth across 317 Squadron.",
     pdfPath: "/newsletters/issue-1.pdf",
-    coverColor: "#4A4A6A",
-  },
+    coverColor: "#1F2E4A",
+  }
 ];
 
 // Returns the latest (current) newsletter
