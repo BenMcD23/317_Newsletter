@@ -4,7 +4,7 @@ import PdfBooklet from "@/components/PdfBooklet";
 import Link from "next/link";
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // Generate static routes for all newsletters
@@ -12,8 +12,9 @@ export function generateStaticParams() {
   return newsletters.map((n) => ({ id: n.id }));
 }
 
-export default function NewsletterPage({ params }: Props) {
-  const newsletter = getNewsletterById(params.id);
+export default async function NewsletterPage({ params }: Props) {
+  const { id } = await params;
+  const newsletter = getNewsletterById(id);
 
   if (!newsletter) notFound();
 

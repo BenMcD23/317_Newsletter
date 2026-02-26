@@ -218,7 +218,7 @@ export default function PdfBooklet({ newsletter }: Props) {
         >
           {newsletter.description}
         </p>
-        
+        <a
           href={newsletter.pdfPath}
           download
           style={{
@@ -349,4 +349,50 @@ export default function PdfBooklet({ newsletter }: Props) {
                 {left ? (
                   <canvas ref={leftCanvasRef} style={{ width: "100%", height: "auto", display: "block" }} />
                 ) : (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", minHeight: "500px", color: "#b0a898", fontFamily: "'Times New Roman', serif", fontSize: "1rem", fo
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", minHeight: "500px", color: "#b0a898", fontFamily: "'Times New Roman', serif", fontSize: "1rem", fontStyle: "italic" }}>
+                    {!isCover && "End of issue"}
+                  </div>
+                )}
+              </div>
+
+              {/* RIGHT PAGE */}
+              <div
+                style={{
+                  flex: 1,
+                  background: "#fff",
+                  minHeight: "400px",
+                  position: "relative",
+                  overflow: "hidden",
+                  transformOrigin: "left center",
+                  // When flipping right, this page peels back
+                  transform: flipping === "right"
+                    ? `perspective(2000px) rotateY(${flipDeg}deg)`
+                    : "none",
+                  transformStyle: "preserve-3d",
+                  zIndex: flipping === "right" ? 10 : 1,
+                }}
+              >
+                <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "14px", background: "linear-gradient(to right, rgba(0,0,0,0.1), transparent)", pointerEvents: "none", zIndex: 2 }} />
+                {/* Page curl top-right */}
+                <div style={{ position: "absolute", top: 0, right: 0, width: "28px", height: "28px", background: "linear-gradient(225deg, #d4cfc8 45%, transparent 46%)", zIndex: 5, pointerEvents: "none" }} />
+                {/* Flip shading */}
+                {flipping === "right" && (
+                  <div style={{ position: "absolute", inset: 0, background: `rgba(0,0,0,${shadeOpacity})`, pointerEvents: "none", zIndex: 3 }} />
+                )}
+                {right ? (
+                  <canvas ref={rightCanvasRef} style={{ width: "100%", height: "auto", display: "block" }} />
+                ) : (
+                  <div style={{ minHeight: "500px" }} />
+                )}
+              </div>
+            </div>
+
+            <p style={{ color: "rgba(255,255,255,0.25)", fontSize: "0.65rem", letterSpacing: "0.2em", fontFamily: "Helvetica Neue, sans-serif", textTransform: "uppercase" }}>
+              Use arrow keys or buttons to turn pages
+            </p>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
