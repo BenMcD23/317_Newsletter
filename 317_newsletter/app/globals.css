@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ink: #1a1208;
+  --paper: #f5f0e8;
+  --paper-dark: #ede6d6;
+  --accent: #8B1A1A;
+  --accent-light: #c44;
+  --rule: #b8a898;
+  --muted: #7a6e60;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Georgia, Cambria, 'Times New Roman', serif;
+  min-height: 100vh;
+}
+
+/* Newspaper-style horizontal rule */
+.rule-double {
+  border: none;
+  border-top: 3px double var(--rule);
+}
+
+.rule-single {
+  border: none;
+  border-top: 1px solid var(--rule);
+}
+
+/* PDF viewer container — booklet feel */
+.pdf-booklet-shadow {
+  box-shadow:
+    -6px 0 12px rgba(0,0,0,0.12),
+    6px 0 12px rgba(0,0,0,0.12),
+    0 8px 32px rgba(0,0,0,0.20),
+    0 2px 4px rgba(0,0,0,0.10);
+}
+
+/* Spine effect */
+.booklet-spine::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(to right, rgba(0,0,0,0.15), rgba(0,0,0,0.05), rgba(0,0,0,0.15));
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Archive card hover */
+.archive-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.archive-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+}
+
+/* Masthead serif styling */
+.masthead-title {
+  font-family: 'Times New Roman', Times, serif;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* Ornamental divider */
+.ornament::before,
+.ornament::after {
+  content: '— ✦ —';
+  color: var(--rule);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+}
+
+@media print {
+  nav, .no-print { display: none !important; }
+}
