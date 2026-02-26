@@ -12,19 +12,30 @@
   --muted: #7a6e60;
 }
 
+/* Single source of truth for fonts — defined in tailwind.config.js */
+@layer base {
+  body {
+    @apply font-serif text-[var(--ink)] bg-[var(--paper)] min-h-screen m-0 p-0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+
+  /* UI elements — labels, nav, captions — use sans */
+  nav, button, label, caption {
+    @apply font-sans;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
 
 html {
   background: var(--paper);
-}
-
-body {
-  background: var(--paper);
-  color: var(--ink);
-  font-family: Georgia, Cambria, 'Times New Roman', serif;
-  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 /* Newspaper-style horizontal rule */
@@ -68,13 +79,6 @@ body {
 .archive-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 12px 32px rgba(0,0,0,0.15);
-}
-
-/* Masthead serif styling */
-.masthead-title {
-  font-family: 'Times New Roman', Times, serif;
-  letter-spacing: -0.02em;
-  line-height: 1;
 }
 
 /* Ornamental divider */

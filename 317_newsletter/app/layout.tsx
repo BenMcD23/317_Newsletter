@@ -19,7 +19,6 @@ export default function RootLayout({
         <main>{children}</main>
         <footer
           style={{
-            borderTop: "3px double var(--rule)",
             padding: "2rem 1.5rem",
             textAlign: "center",
             color: "var(--muted)",

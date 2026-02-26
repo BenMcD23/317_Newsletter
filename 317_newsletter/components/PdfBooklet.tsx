@@ -10,15 +10,16 @@ interface Props {
 export default function PdfBooklet({ newsletter }: Props) {
   const leftCanvasRef = useRef<HTMLCanvasElement>(null);
   const rightCanvasRef = useRef<HTMLCanvasElement>(null);
-  const flipCanvasRef = useRef<HTMLCanvasElement>(null);
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [currentSpread, setCurrentSpread] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [flipping, setFlipping] = useState<"left" | "right" | null>(null);
-  const [flipProgress, setFlipProgress] = useState(0); // 0→1
+  const [flipProgress, setFlipProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const flipAnimRef = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const totalSpreads = totalPages > 0 ? Math.ceil((totalPages - 1) / 2) + 1 : 0;
 
@@ -34,7 +35,6 @@ export default function PdfBooklet({ newsletter }: Props) {
     [totalPages]
   );
 
-  // Load PDF — use CDN worker with explicit version match
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -46,7 +46,6 @@ export default function PdfBooklet({ newsletter }: Props) {
     (async () => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
-        // Use unpkg CDN with the exact installed version — most reliable across bundlers
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
         const doc = await pdfjsLib.getDocument({
@@ -72,7 +71,7 @@ export default function PdfBooklet({ newsletter }: Props) {
   }, [newsletter.pdfPath]);
 
   const renderPageToCanvas = useCallback(
-    async (pageNum: number, canvas: HTMLCanvasElement, scale = 1.8) => {
+    async (pageNum: number, canvas: HTMLCanvasElement, scale = 2.2) => {
       if (!pdfDoc) return;
       const page = await pdfDoc.getPage(pageNum);
       const viewport = page.getViewport({ scale });
@@ -85,7 +84,6 @@ export default function PdfBooklet({ newsletter }: Props) {
     [pdfDoc]
   );
 
-  // Render current spread
   useEffect(() => {
     if (!pdfDoc || loading) return;
     const { left, right } = getSpreadPages(currentSpread);
@@ -102,7 +100,6 @@ export default function PdfBooklet({ newsletter }: Props) {
     }
   }, [pdfDoc, currentSpread, loading, renderPageToCanvas, getSpreadPages]);
 
-  // Animate the flip
   const animateFlip = useCallback(
     (direction: "left" | "right", onComplete: () => void) => {
       setFlipping(direction);
@@ -111,7 +108,6 @@ export default function PdfBooklet({ newsletter }: Props) {
 
       const tick = (now: number) => {
         const raw = Math.min((now - start) / duration, 1);
-        // Ease in-out cubic
         const t = raw < 0.5 ? 4 * raw * raw * raw : 1 - Math.pow(-2 * raw + 2, 3) / 2;
         setFlipProgress(t);
 
@@ -143,16 +139,34 @@ export default function PdfBooklet({ newsletter }: Props) {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") goNext();
       if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "Escape" && isFullscreen) setIsFullscreen(false);
+      if (e.key === "f") setIsFullscreen((v) => !v);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [goNext, goPrev]);
+  }, [goNext, goPrev, isFullscreen]);
 
-  // Cleanup animation on unmount
+  // Sync browser fullscreen API with our state
   useEffect(() => {
-    return () => {
-      if (flipAnimRef.current) cancelAnimationFrame(flipAnimRef.current);
+    if (isFullscreen) {
+      containerRef.current?.requestFullscreen?.().catch(() => {});
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
+      }
+    }
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    const onFsChange = () => {
+      if (!document.fullscreenElement) setIsFullscreen(false);
     };
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  useEffect(() => {
+    return () => { if (flipAnimRef.current) cancelAnimationFrame(flipAnimRef.current); };
   }, []);
 
   const { left, right } = pdfDoc
@@ -160,97 +174,114 @@ export default function PdfBooklet({ newsletter }: Props) {
     : { left: null, right: null };
   const isCover = currentSpread === 0;
 
-  // Compute 3D flip transform
-  // When flipping right: right half rotates from 0 → -180deg around left edge
-  // When flipping left: left half rotates from -180 → 0deg around right edge
   const flipDeg = flipping === "right"
     ? flipProgress * -180
     : flipping === "left"
     ? -180 + flipProgress * 180
     : 0;
 
-  // Shading overlay opacity for realism
   const shadeOpacity = Math.abs(Math.sin(flipProgress * Math.PI)) * 0.5;
+
+  const pageLabel = isCover
+    ? "Cover"
+    : (() => {
+        const { left: l, right: r } = getSpreadPages(currentSpread);
+        if (l && r) return `Pages ${l} – ${r}`;
+        if (r) return `Page ${r}`;
+        if (l) return `Page ${l}`;
+        return "";
+      })();
 
   return (
     <section>
-      {/* Issue header */}
-      <div
-        style={{
-          textAlign: "center",
-          padding: "2.5rem 1rem 1.5rem",
-          borderBottom: "3px double var(--rule)",
-          background: "var(--paper-dark)",
-        }}
-      >
-        <p
+      {!isFullscreen && (
+        <div
           style={{
-            fontSize: "0.65rem",
-            letterSpacing: "0.3em",
-            textTransform: "uppercase",
-            color: "var(--accent)",
-            marginBottom: "0.5rem",
-            fontFamily: "Helvetica Neue, sans-serif",
+            textAlign: "center",
+            padding: "2.5rem 1rem 1.5rem",
+            borderBottom: "3px double var(--rule)",
+            background: "var(--paper-dark)",
           }}
         >
-          Issue #{newsletter.issue} · {newsletter.date}
-        </p>
-        <h2
-          style={{
-            fontSize: "clamp(1.5rem, 4vw, 2.5rem)",
-            fontFamily: "'Times New Roman', Times, serif",
-            fontWeight: "700",
-            margin: "0 0 0.75rem",
-            color: "var(--ink)",
-          }}
-        >
-          {newsletter.title}
-        </h2>
-        <p
-          style={{
-            maxWidth: "520px",
-            margin: "0 auto 1.25rem",
-            color: "var(--muted)",
-            fontSize: "0.9rem",
-            lineHeight: "1.6",
-            fontStyle: "italic",
-          }}
-        >
-          {newsletter.description}
-        </p>
-        <a
-          href={newsletter.pdfPath}
-          download
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.4rem",
-            padding: "0.55rem 1.4rem",
-            background: "var(--ink)",
-            color: "var(--paper)",
-            textDecoration: "none",
-            fontSize: "0.7rem",
-            letterSpacing: "0.15em",
-            textTransform: "uppercase",
-            fontFamily: "Helvetica Neue, sans-serif",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "var(--ink)"; }}
-        >
-          Download PDF
-        </a>
-      </div>
+          <p
+            style={{
+              fontSize: "0.65rem",
+              letterSpacing: "0.3em",
+              textTransform: "uppercase",
+              color: "var(--accent)",
+              marginBottom: "0.5rem",
+              fontFamily: "Helvetica Neue, sans-serif",
+            }}
+          >
+            Issue #{newsletter.issue} · {newsletter.date}
+          </p>
+
+          <h2
+            style={{
+              fontSize: "clamp(1.5rem, 4vw, 2.5rem)",
+              fontFamily: "'Times New Roman', Times, serif",
+              fontWeight: "700",
+              margin: "0 0 0.75rem",
+              color: "var(--ink)",
+            }}
+          >
+            {newsletter.title}
+          </h2>
+
+          <p
+            style={{
+              maxWidth: "520px",
+              margin: "0 auto 1.25rem",
+              color: "var(--muted)",
+              fontSize: "0.9rem",
+              lineHeight: "1.6",
+              fontStyle: "italic",
+            }}
+          >
+            {newsletter.description}
+          </p>
+
+          <a
+            href={newsletter.pdfPath}
+            download
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              padding: "0.55rem 1.4rem",
+              background: "var(--ink)",
+              color: "var(--paper)",
+              textDecoration: "none",
+              fontSize: "0.7rem",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              fontFamily: "Helvetica Neue, sans-serif",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--ink)"; }}
+          >
+            Download PDF
+          </a>
+        </div>
+      )}
 
       {/* Viewer */}
       <div
+        ref={containerRef}
         style={{
-          background: "#5a5550",
-          minHeight: "80vh",
-          padding: "2.5rem 1rem 3rem",
+          background: isFullscreen ? "#3a3530" : "#5a5550",
+          // In fullscreen the browser gives us 100vh; we use flex column to
+          // keep the nav bar always visible at the bottom.
+          height: isFullscreen ? "100vh" : "auto",
+          minHeight: isFullscreen ? "unset" : "85vh",
+          padding: isFullscreen ? "1rem" : "2.5rem 1rem 3rem",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: "1.5rem",
+          gap: "0.75rem",
+          position: "relative",
+          boxSizing: "border-box",
+          overflow: "hidden",
         }}
       >
         <style>{`
@@ -258,7 +289,7 @@ export default function PdfBooklet({ newsletter }: Props) {
           .page-turn-btn {
             background: rgba(255,255,255,0.12);
             border: 1px solid rgba(255,255,255,0.2);
-            color: rgba(255,255,255,0.8);
+            color: rgba(255,255,255,0.85);
             width: 48px; height: 48px;
             border-radius: 50%;
             font-size: 1.3rem;
@@ -268,15 +299,47 @@ export default function PdfBooklet({ newsletter }: Props) {
             flex-shrink: 0;
             user-select: none;
           }
-          .page-turn-btn:hover:not(:disabled) {
-            background: rgba(255,255,255,0.25);
-            transform: scale(1.1);
-          }
+          .page-turn-btn:hover:not(:disabled) { background: rgba(255,255,255,0.25); transform: scale(1.1); }
           .page-turn-btn:disabled { opacity: 0.2; cursor: default; }
+          .fs-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: rgba(255,255,255,0.7);
+            padding: 0.35rem 0.85rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            cursor: pointer;
+            font-family: Helvetica Neue, sans-serif;
+            display: flex; align-items: center; gap: 0.4rem;
+            transition: background 0.15s, color 0.15s;
+            user-select: none;
+          }
+          .fs-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
         `}</style>
 
+        {/* Top bar: page info + fullscreen toggle */}
+        {!loading && !error && (
+          <div style={{ width: "100%", maxWidth: "1300px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+            {/* Left: issue info (fullscreen only) */}
+            <div style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Helvetica Neue, sans-serif", fontSize: "0.65rem", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              {isFullscreen && `${newsletter.title} · Issue #${newsletter.issue} · ${newsletter.date}`}
+            </div>
+
+            {/* Right: fullscreen button */}
+            <button className="fs-btn" onClick={() => setIsFullscreen((v) => !v)}>
+              {isFullscreen ? (
+                <>{"\u26F6"} Exit Fullscreen</>
+              ) : (
+                <>{"\u26F6"} Fullscreen</>
+              )}
+            </button>
+          </div>
+        )}
+
         {loading && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "500px", gap: "1rem", color: "rgba(255,255,255,0.6)" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, gap: "1rem", color: "rgba(255,255,255,0.6)" }}>
             <div style={{ width: "40px", height: "40px", border: "3px solid rgba(255,255,255,0.15)", borderTopColor: "rgba(255,255,255,0.7)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
             <p style={{ fontSize: "0.8rem", letterSpacing: "0.1em", fontFamily: "sans-serif" }}>Loading newsletter...</p>
           </div>
@@ -292,34 +355,18 @@ export default function PdfBooklet({ newsletter }: Props) {
 
         {!loading && !error && (
           <>
-            {/* Page counter + nav */}
-            <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", color: "rgba(255,255,255,0.55)", fontFamily: "Helvetica Neue, sans-serif", fontSize: "0.7rem", letterSpacing: "0.15em", textTransform: "uppercase" }}>
-              <button className="page-turn-btn" onClick={goPrev} disabled={currentSpread === 0 || !!flipping} aria-label="Previous spread">
-                {"←"}
-              </button>
-              <span>
-                {isCover ? "Cover" : (() => {
-                  const { left: l, right: r } = getSpreadPages(currentSpread);
-                  if (l && r) return `Pages ${l} - ${r}`;
-                  if (r) return `Page ${r}`;
-                  if (l) return `Page ${l}`;
-                  return "";
-                })()}
-                {" / "}{totalPages}
-              </span>
-              <button className="page-turn-btn" onClick={goNext} disabled={currentSpread >= totalSpreads - 1 || !!flipping} aria-label="Next spread">
-                {"→"}
-              </button>
-            </div>
-
-            {/* Book spread with 3D flip */}
+            {/* Book spread — flex:1 so it fills available vertical space, with overflow hidden */}
             <div
               style={{
                 display: "flex",
-                maxWidth: "1100px",
                 width: "100%",
-                perspective: "2000px",
-                boxShadow: "-8px 0 24px rgba(0,0,0,0.35), 8px 0 24px rgba(0,0,0,0.35), 0 12px 48px rgba(0,0,0,0.45)",
+                maxWidth: isFullscreen ? "calc(100vw - 4rem)" : "1300px",
+                // KEY FIX: use flex:1 + maxHeight to fill remaining space without overflowing nav
+                flex: "1 1 0",
+                minHeight: 0,
+                maxHeight: isFullscreen ? "calc(100vh - 130px)" : "none",
+                perspective: "2500px",
+                boxShadow: "-10px 0 30px rgba(0,0,0,0.4), 10px 0 30px rgba(0,0,0,0.4), 0 16px 60px rgba(0,0,0,0.5)",
                 position: "relative",
               }}
             >
@@ -329,27 +376,30 @@ export default function PdfBooklet({ newsletter }: Props) {
                   flex: 1,
                   background: left ? "#fff" : "#ede8e0",
                   borderRight: "2px solid rgba(0,0,0,0.18)",
-                  minHeight: "400px",
                   position: "relative",
                   overflow: "hidden",
                   transformOrigin: "right center",
-                  // When flipping left, this page peels back
-                  transform: flipping === "left"
-                    ? `perspective(2000px) rotateY(${flipDeg}deg)`
-                    : "none",
+                  transform: flipping === "left" ? `perspective(2500px) rotateY(${flipDeg}deg)` : "none",
                   transformStyle: "preserve-3d",
                   zIndex: flipping === "left" ? 10 : 1,
                 }}
               >
-                <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "14px", background: "linear-gradient(to left, rgba(0,0,0,0.1), transparent)", pointerEvents: "none", zIndex: 2 }} />
-                {/* Flip shading */}
+                <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "16px", background: "linear-gradient(to left, rgba(0,0,0,0.1), transparent)", pointerEvents: "none", zIndex: 2 }} />
                 {flipping === "left" && (
                   <div style={{ position: "absolute", inset: 0, background: `rgba(0,0,0,${shadeOpacity})`, pointerEvents: "none", zIndex: 3 }} />
                 )}
                 {left ? (
-                  <canvas ref={leftCanvasRef} style={{ width: "100%", height: "auto", display: "block" }} />
+                  <canvas
+                    ref={leftCanvasRef}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      display: "block",
+                    }}
+                  />
                 ) : (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", minHeight: "500px", color: "#b0a898", fontFamily: "'Times New Roman', serif", fontSize: "1rem", fontStyle: "italic" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#b0a898", fontFamily: "'Times New Roman', serif", fontSize: "1rem", fontStyle: "italic" }}>
                     {!isCover && "End of issue"}
                   </div>
                 )}
@@ -360,35 +410,72 @@ export default function PdfBooklet({ newsletter }: Props) {
                 style={{
                   flex: 1,
                   background: "#fff",
-                  minHeight: "400px",
                   position: "relative",
                   overflow: "hidden",
                   transformOrigin: "left center",
-                  // When flipping right, this page peels back
-                  transform: flipping === "right"
-                    ? `perspective(2000px) rotateY(${flipDeg}deg)`
-                    : "none",
+                  transform: flipping === "right" ? `perspective(2500px) rotateY(${flipDeg}deg)` : "none",
                   transformStyle: "preserve-3d",
                   zIndex: flipping === "right" ? 10 : 1,
                 }}
               >
-                <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "14px", background: "linear-gradient(to right, rgba(0,0,0,0.1), transparent)", pointerEvents: "none", zIndex: 2 }} />
-                {/* Page curl top-right */}
-                <div style={{ position: "absolute", top: 0, right: 0, width: "28px", height: "28px", background: "linear-gradient(225deg, #d4cfc8 45%, transparent 46%)", zIndex: 5, pointerEvents: "none" }} />
-                {/* Flip shading */}
+                <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "16px", background: "linear-gradient(to right, rgba(0,0,0,0.1), transparent)", pointerEvents: "none", zIndex: 2 }} />
+                <div style={{ position: "absolute", top: 0, right: 0, width: "32px", height: "32px", background: "linear-gradient(225deg, #d4cfc8 45%, transparent 46%)", zIndex: 5, pointerEvents: "none" }} />
                 {flipping === "right" && (
                   <div style={{ position: "absolute", inset: 0, background: `rgba(0,0,0,${shadeOpacity})`, pointerEvents: "none", zIndex: 3 }} />
                 )}
                 {right ? (
-                  <canvas ref={rightCanvasRef} style={{ width: "100%", height: "auto", display: "block" }} />
+                  <canvas
+                    ref={rightCanvasRef}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      display: "block",
+                    }}
+                  />
                 ) : (
-                  <div style={{ minHeight: "500px" }} />
+                  <div style={{ minHeight: "100%" }} />
                 )}
               </div>
+
+              {/* Click zones on edges for turning pages */}
+              <div
+                onClick={goPrev}
+                style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "80px", cursor: currentSpread === 0 ? "default" : "w-resize", zIndex: 20, opacity: 0 }}
+              />
+              <div
+                onClick={goNext}
+                style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "80px", cursor: currentSpread >= totalSpreads - 1 ? "default" : "e-resize", zIndex: 20, opacity: 0 }}
+              />
             </div>
 
-            <p style={{ color: "rgba(255,255,255,0.25)", fontSize: "0.65rem", letterSpacing: "0.2em", fontFamily: "Helvetica Neue, sans-serif", textTransform: "uppercase" }}>
-              Use arrow keys or buttons to turn pages
+            {/* Bottom nav bar — always visible, never pushed off screen */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "1.5rem",
+                color: "rgba(255,255,255,0.55)",
+                fontFamily: "Helvetica Neue, sans-serif",
+                fontSize: "0.7rem",
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+                flexShrink: 0,
+              }}
+            >
+              <button className="page-turn-btn" onClick={goPrev} disabled={currentSpread === 0 || !!flipping} aria-label="Previous spread">
+                {"←"}
+              </button>
+              <span style={{ minWidth: "120px", textAlign: "center" }}>
+                {pageLabel}{" / "}{totalPages}
+              </span>
+              <button className="page-turn-btn" onClick={goNext} disabled={currentSpread >= totalSpreads - 1 || !!flipping} aria-label="Next spread">
+                {"→"}
+              </button>
+            </div>
+
+            <p style={{ color: "rgba(255,255,255,0.2)", fontSize: "0.6rem", letterSpacing: "0.2em", fontFamily: "Helvetica Neue, sans-serif", textTransform: "uppercase", flexShrink: 0, margin: 0 }}>
+              Arrow keys · click page edges · press F to toggle fullscreen
             </p>
           </>
         )}

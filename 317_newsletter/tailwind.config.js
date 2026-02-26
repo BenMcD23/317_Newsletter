@@ -8,8 +8,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],
-        sans: ['Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+        // Change these two lines to update fonts across the entire site
+        serif: ['Lora', 'Georgia', 'serif'],
+        sans: ['Inter', 'Helvetica Neue', 'sans-serif'],
       },
     },
   },
