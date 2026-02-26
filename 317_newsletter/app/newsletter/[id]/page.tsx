@@ -7,7 +7,6 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-// Generate static routes for all newsletters
 export function generateStaticParams() {
   return newsletters.map((n) => ({ id: n.id }));
 }
@@ -21,32 +20,16 @@ export default async function NewsletterPage({ params }: Props) {
   return (
     <>
       {/* Breadcrumb */}
-      <div
-        style={{
-          background: "var(--paper-dark)",
-          borderBottom: "1px solid var(--rule)",
-          padding: "0.6rem 1.5rem",
-          fontSize: "0.7rem",
-          letterSpacing: "0.08em",
-          fontFamily: "Helvetica Neue, sans-serif",
-          color: "var(--muted)",
-        }}
-      >
-        <Link
-          href="/"
-          style={{ color: "var(--muted)", textDecoration: "none" }}
-        >
+      <div className="font-sans bg-[var(--paper-dark)] border-b border-[var(--rule)] px-6 py-2 text-[0.7rem] tracking-[0.08em] text-[var(--muted)]">
+        <Link href="/" className="text-[var(--muted)] no-underline hover:text-[var(--ink)]">
           Home
         </Link>
         {" / "}
-        <Link
-          href="/archive"
-          style={{ color: "var(--muted)", textDecoration: "none" }}
-        >
+        <Link href="/archive" className="text-[var(--muted)] no-underline hover:text-[var(--ink)]">
           Archive
         </Link>
         {" / "}
-        <span style={{ color: "var(--ink)" }}>
+        <span className="text-[var(--ink)]">
           Issue #{newsletter.issue} — {newsletter.date}
         </span>
       </div>

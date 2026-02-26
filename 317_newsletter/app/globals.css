@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import "tailwindcss";
 
 :root {
   --ink: #1a1208;
@@ -12,20 +13,13 @@
   --muted: #7a6e60;
 }
 
-/* Single source of truth for fonts — defined in tailwind.config.js */
-@layer base {
-  body {
-    @apply font-serif text-[var(--ink)] bg-[var(--paper)] min-h-screen m-0 p-0;
-  }
+@theme {
+  --font-serif: Lora, Georgia, serif;
+  --font-sans: Inter, 'Helvetica Neue', sans-serif;
+}
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-serif;
-  }
-
-  /* UI elements — labels, nav, captions — use sans */
-  nav, button, label, caption {
-    @apply font-sans;
-  }
+body {
+  font-family: var(--font-serif);
 }
 
 * {

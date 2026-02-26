@@ -7,11 +7,6 @@ module.exports = {
   ],
   theme: {
     extend: {
-      fontFamily: {
-        // Change these two lines to update fonts across the entire site
-        serif: ['Lora', 'Georgia', 'serif'],
-        sans: ['Inter', 'Helvetica Neue', 'sans-serif'],
-      },
     },
   },
   plugins: [],
