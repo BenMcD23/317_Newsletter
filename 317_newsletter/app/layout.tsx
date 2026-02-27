@@ -3,8 +3,8 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  title: "The Dispatch — Newsletter",
-  description: "Our monthly newsletter",
+  title: "317 Airwaves",
+  description: "317's monthly newsletter",
 };
 
 export default function RootLayout({
