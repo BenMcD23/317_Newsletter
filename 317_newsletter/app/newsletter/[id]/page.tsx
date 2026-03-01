@@ -20,7 +20,7 @@ export default async function NewsletterPage({ params }: Props) {
   return (
     <>
       {/* Breadcrumb */}
-      <div className="font-sans bg-[var(--paper-dark)] border-b border-[var(--rule)] px-6 py-2 text-[0.7rem] tracking-[0.08em] text-[var(--muted)]">
+      <div className="bg-[var(--paper-dark)] border-b border-[var(--rule)] px-6 py-2 text-[0.7rem] tracking-[0.08em] text-[var(--muted)]">
         <Link href="/" className="text-[var(--muted)] no-underline hover:text-[var(--ink)]">
           Home
         </Link>

@@ -1,50 +1,22 @@
-"use client"
+"use client";
 
 import { useRouter } from "next/navigation";
 import { newsletters } from "@/lib/newsletters";
 
 export default function ArchivePage() {
   return (
-    <div
-      style={{
-        maxWidth: "900px",
-        margin: "0 auto",
-        padding: "3rem 1.5rem",
-      }}
-    >
-      <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-        <p
-          style={{
-            fontSize: "0.65rem",
-            letterSpacing: "0.3em",
-            textTransform: "uppercase",
-            color: "var(--accent)",
-            marginBottom: "0.5rem",
-            fontFamily: "Helvetica Neue, sans-serif",
-          }}
-        >
+    <div className="max-w-[900px] mx-auto px-6 py-12">
+      <div className="text-center mb-12">
+        <p className="text-[0.65rem] tracking-[0.3em] uppercase text-[var(--accent)] mb-2">
           Complete Collection
         </p>
-        <h1
-          style={{
-            fontSize: "clamp(1.8rem, 5vw, 3rem)",
-            fontFamily: "'Times New Roman', Times, serif",
-            fontWeight: "700",
-            margin: "0 0 1rem",
-          }}
-        >
+        <h1 className="text-[clamp(1.8rem,5vw,3rem)] font-bold m-0 mb-4">
           Newsletter Archive
         </h1>
-        <hr className="rule-double" style={{ maxWidth: "200px", margin: "0 auto" }} />
+        <hr className="rule-double max-w-[200px] mx-auto" />
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-          gap: "1.5rem",
-        }}
-      >
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-6">
         {newsletters.map((newsletter, i) => (
           <ArchiveCard
             key={newsletter.id}
@@ -73,136 +45,54 @@ function ArchiveCard({
 
   return (
     <article
-      className="archive-card"
+      className="archive-card border border-[var(--rule)] bg-[var(--paper)] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.07)] cursor-pointer"
       onClick={handleCardClick}
-      style={{
-        border: "1px solid var(--rule)",
-        background: "var(--paper)",
-        overflow: "hidden",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
-        cursor: "pointer",
-      }}
     >
       {/* Color band */}
       <div
-        style={{
-          background: color,
-          height: "120px",
-          position: "relative",
-          display: "flex",
-          alignItems: "flex-end",
-          padding: "0.75rem 1rem",
-        }}
+        className="h-[120px] relative flex items-end px-4 py-3"
+        style={{ background: color }}
       >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px)",
-          }}
-        />
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <p
-            style={{
-              color: "rgba(255,255,255,0.7)",
-              fontSize: "0.6rem",
-              letterSpacing: "0.25em",
-              textTransform: "uppercase",
-              margin: "0 0 0.2rem",
-              fontFamily: "Helvetica Neue, sans-serif",
-            }}
-          >
+        <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.04)_2px,rgba(0,0,0,0.04)_4px)]" />
+        <div className="relative z-10">
+          <p className="text-white/70 text-[0.6rem] tracking-[0.25em] uppercase mb-0.5">
             Issue #{newsletter.issue}
           </p>
-          <p
-            style={{
-              color: "#fff",
-              fontSize: "1rem",
-              fontFamily: "'Times New Roman', serif",
-              fontWeight: "700",
-              margin: 0,
-            }}
-          >
+          <p className="text-white text-base font-bold m-0">
             {newsletter.date}
           </p>
         </div>
+
         {isCurrent && (
-          <span
-            style={{
-              position: "absolute",
-              top: "0.75rem",
-              right: "0.75rem",
-              background: "var(--accent)",
-              color: "#fff",
-              fontSize: "0.55rem",
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              padding: "0.2rem 0.5rem",
-              fontFamily: "Helvetica Neue, sans-serif",
-            }}
-          >
+          <span className="absolute top-3 right-3 bg-[var(--accent)] text-white text-[0.55rem] tracking-[0.15em] uppercase px-2 py-0.5">
             Current
           </span>
         )}
       </div>
 
       {/* Card body */}
-      <div style={{ padding: "1rem 1.1rem 1.25rem" }}>
-        <h3
-          style={{
-            fontSize: "1rem",
-            fontFamily: "'Times New Roman', serif",
-            fontWeight: "700",
-            margin: "0 0 0.5rem",
-          }}
-        >
+      <div className="px-4 pt-4 pb-5">
+        <h3 className="text-base font-bold m-0 mb-2">
           {newsletter.title}
         </h3>
-        <p
-          style={{
-            fontSize: "0.8rem",
-            color: "var(--muted)",
-            lineHeight: "1.55",
-            margin: "0 0 1rem",
-            fontStyle: "italic",
-          }}
-        >
+
+        <p className="text-[0.8rem] text-[var(--muted)] leading-[1.55] italic m-0 mb-4">
           {newsletter.description}
         </p>
-        <div
-          style={{
-            display: "flex",
-            gap: "0.75rem",
-            alignItems: "center",
-          }}
-        >
+
+        <div className="flex gap-3 items-center">
           <span
-            style={{
-              fontSize: "0.65rem",
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              color: color,
-              fontFamily: "Helvetica Neue, sans-serif",
-              fontWeight: "600",
-            }}
+            className="text-[0.65rem] tracking-[0.15em] uppercase font-semibold"
+            style={{ color }}
           >
-            Read issue →
+            Read issue
           </span>
+
           <a
             href={newsletter.pdfPath}
             download
-            onClick={(e) => e.stopPropagation()} 
-            style={{
-              fontSize: "0.65rem",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "var(--muted)",
-              textDecoration: "none",
-              fontFamily: "Helvetica Neue, sans-serif",
-              position: "relative",
-              zIndex: 2,
-            }}
+            onClick={(e) => e.stopPropagation()}
+            className="text-[0.65rem] tracking-[0.1em] uppercase text-[var(--muted)] no-underline relative z-20"
           >
             ↓ PDF
           </a>

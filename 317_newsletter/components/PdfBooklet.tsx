@@ -67,9 +67,9 @@ export default function PdfBooklet({ newsletter }: Props) {
     if (currentPage === 1) return { left: null, right: 1 };
     const left = currentPage % 2 === 0 ? currentPage : currentPage - 1;
     const right = left + 1;
-    return { 
-      left: left <= totalPages ? left : null, 
-      right: right <= totalPages ? right : null 
+    return {
+      left: left <= totalPages ? left : null,
+      right: right <= totalPages ? right : null
     };
   }, [isMobile, currentPage, totalPages]);
 
@@ -153,17 +153,21 @@ export default function PdfBooklet({ newsletter }: Props) {
   return (
     <section>
       {!isFullscreen && (
-        <div style={{ textAlign: "center", padding: "2.5rem 1rem 1.5rem", borderBottom: "3px double var(--rule)", background: "var(--paper-dark)" }}>
-          <p style={{ fontSize: "0.65rem", letterSpacing: "0.3em", textTransform: "uppercase", color: "var(--accent)", marginBottom: "0.5rem", fontFamily: "sans-serif" }}>
+        <div className="text-center px-4 pt-10 pb-6 border-b-[3px] border-double border-[var(--rule)] bg-[var(--paper-dark)]">
+          <p className="text-[0.65rem] tracking-[0.3em] uppercase text-[var(--accent)] mb-2">
             Issue #{newsletter.issue} · {newsletter.date}
           </p>
-          <h2 style={{ fontSize: "clamp(1.5rem, 4vw, 2.5rem)", fontFamily: "serif", fontWeight: "700", margin: "0 0 0.75rem", color: "var(--ink)" }}>
+          <h2 className="text-[clamp(1.5rem,4vw,2.5rem)] font-bold m-0 mb-3 text-[var(--ink)]">
             {newsletter.title}
           </h2>
-          <p style={{ maxWidth: "520px", margin: "0 auto 1.25rem", color: "var(--muted)", fontSize: "0.9rem", lineHeight: "1.6", fontStyle: "italic" }}>
+          <p className="max-w-[520px] mx-auto mb-5 text-[var(--muted)] text-[0.9rem] leading-relaxed italic">
             {newsletter.description}
           </p>
-          <a href={newsletter.pdfPath} download style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.55rem 1.4rem", background: "var(--ink)", color: "var(--paper)", textDecoration: "none", fontSize: "0.7rem", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "sans-serif" }}>
+          
+            <a href={newsletter.pdfPath}
+              download
+              className="inline-flex items-center gap-1.5 px-6 py-2 bg-[var(--ink)] text-[var(--paper)] no-underline text-[0.7rem] tracking-[0.15em] uppercase"
+            >
             Download PDF
           </a>
         </div>
@@ -171,83 +175,93 @@ export default function PdfBooklet({ newsletter }: Props) {
 
       <div
         ref={containerRef}
+        className="flex flex-col items-center relative overflow-hidden box-border"
         style={{
           background: "#3a3530",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: isFullscreen ? "1rem" : (isMobile ? "1.5rem 1rem" : "3rem 2rem"),
+          padding: isFullscreen ? "1rem" : isMobile ? "1.5rem 1rem" : "3rem 2rem",
           height: isFullscreen ? "100vh" : "auto",
           minHeight: isFullscreen ? "unset" : "85vh",
-          position: "relative",
-          overflow: "hidden",
-          boxSizing: "border-box"
         }}
       >
         <style>{`
           .page-turn-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
           .page-turn-btn:hover:not(:disabled) { background: rgba(255,255,255,0.25); transform: scale(1.1); }
           .page-turn-btn:disabled { opacity: 0.2; }
-          .fs-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); color: rgba(255,255,255,0.7); padding: 0.35rem 0.85rem; border-radius: 4px; font-size: 0.65rem; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
+          .fs-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); color: rgba(255,255,255,0.7); padding: 0.35rem 0.85rem; border-radius: 4px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: 0.2s; }
           .fs-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
         `}</style>
 
         {/* Top Control Bar */}
-        <div style={{ width: "100%", maxWidth: "1200px", display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
+        <div className="w-full max-w-[1200px] flex justify-end mb-4">
           <button className="fs-btn" onClick={toggleFullscreen}>
             {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           </button>
         </div>
 
-        <div style={{
-          display: "flex",
-          width: "100%",
-          maxWidth: isMobile ? "450px" : "1200px",
-          flex: isFullscreen ? "1" : "unset",
-          aspectRatio: isFullscreen ? "unset" : (isMobile ? "1 / 1.41" : "1.41 / 1"),
-          perspective: "2500px",
-          position: "relative",
-          boxShadow: "0 30px 60px rgba(0,0,0,0.5)",
-          marginBottom: isFullscreen ? "1rem" : "0"
-        }}>
+        <div
+          className="flex relative"
+          style={{
+            width: "100%",
+            maxWidth: isMobile ? "450px" : "1200px",
+            flex: isFullscreen ? "1" : "unset",
+            aspectRatio: isFullscreen ? "unset" : isMobile ? "1 / 1.41" : "1.41 / 1",
+            perspective: "2500px",
+            boxShadow: "0 30px 60px rgba(0,0,0,0.5)",
+            marginBottom: isFullscreen ? "1rem" : "0",
+          }}
+        >
           {!isMobile && (
-            <div style={{ 
-              flex: 1, background: "#fff", borderRight: "1px solid rgba(0,0,0,0.1)", position: "relative",
-              transformOrigin: "right center",
-              transform: flipping === "left" ? `rotateY(${flipDeg}deg)` : "none",
-              zIndex: flipping === "left" ? 10 : 1,
-              transformStyle: "preserve-3d"
-            }}>
-              {left ? <canvas ref={leftCanvasRef} style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <div style={{ background: "#f5f5f5", height: "100%" }} />}
-              {flipping === "left" && <div style={{ position: "absolute", inset: 0, background: `rgba(0,0,0,${shadeOpacity})`, pointerEvents: "none" }} />}
+            <div
+              className="flex-1 bg-white border-r border-black/10 relative"
+              style={{
+                transformOrigin: "right center",
+                transform: flipping === "left" ? `rotateY(${flipDeg}deg)` : "none",
+                zIndex: flipping === "left" ? 10 : 1,
+                transformStyle: "preserve-3d",
+              }}
+            >
+              {left
+                ? <canvas ref={leftCanvasRef} className="w-full h-full object-contain" />
+                : <div className="bg-[#f5f5f5] h-full" />
+              }
+              {flipping === "left" && (
+                <div className="absolute inset-0 pointer-events-none" style={{ background: `rgba(0,0,0,${shadeOpacity})` }} />
+              )}
             </div>
           )}
 
-          <div style={{ 
-            flex: 1, background: "#fff", position: "relative",
-            transformOrigin: "left center",
-            transform: flipping === "right" ? `rotateY(${flipDeg}deg)` : "none",
-            zIndex: flipping === "right" ? 10 : 1,
-            transformStyle: "preserve-3d"
-          }}>
-            {right && <canvas ref={rightCanvasRef} style={{ width: "100%", height: "100%", objectFit: "contain" }} />}
-            {flipping === "right" && <div style={{ position: "absolute", inset: 0, background: `rgba(0,0,0,${shadeOpacity})`, pointerEvents: "none" }} />}
+          <div
+            className="flex-1 bg-white relative"
+            style={{
+              transformOrigin: "left center",
+              transform: flipping === "right" ? `rotateY(${flipDeg}deg)` : "none",
+              zIndex: flipping === "right" ? 10 : 1,
+              transformStyle: "preserve-3d",
+            }}
+          >
+            {right && <canvas ref={rightCanvasRef} className="w-full h-full object-contain" />}
+            {flipping === "right" && (
+              <div className="absolute inset-0 pointer-events-none" style={{ background: `rgba(0,0,0,${shadeOpacity})` }} />
+            )}
           </div>
-          
-          <div onClick={goPrev} style={{ position: "absolute", left: 0, width: "25%", height: "100%", cursor: "w-resize", zIndex: 20 }} />
-          <div onClick={goNext} style={{ position: "absolute", right: 0, width: "25%", height: "100%", cursor: "e-resize", zIndex: 20 }} />
+
+          <div onClick={goPrev} className="absolute left-0 w-1/4 h-full cursor-w-resize z-20" />
+          <div onClick={goNext} className="absolute right-0 w-1/4 h-full cursor-e-resize z-20" />
         </div>
 
-        <div style={{ marginTop: isFullscreen ? "auto" : "2.5rem", display: "flex", alignItems: "center", gap: "1.5rem", color: "rgba(255,255,255,0.6)", paddingBottom: isFullscreen ? "1rem" : "0" }}>
+        <div
+          className="flex items-center gap-6 text-white/60"
+          style={{ marginTop: isFullscreen ? "auto" : "2.5rem", paddingBottom: isFullscreen ? "1rem" : "0" }}
+        >
           <button className="page-turn-btn" onClick={goPrev} disabled={currentPage === 1 || !!flipping}>←</button>
-          <span style={{ fontSize: "0.7rem", letterSpacing: "0.15em", minWidth: "120px", textAlign: "center", textTransform: "uppercase" }}>
+          <span className="text-[0.7rem] tracking-[0.15em] min-w-[120px] text-center uppercase">
             {isMobile ? `PAGE ${currentPage}` : (currentPage === 1 ? "COVER" : `PAGES ${left}-${right}`)} / {totalPages}
           </span>
           <button className="page-turn-btn" onClick={goNext} disabled={currentPage >= totalPages || !!flipping}>→</button>
         </div>
 
         {!isFullscreen && (
-          <p style={{ marginTop: "1.5rem", color: "rgba(255,255,255,0.2)", fontSize: "0.6rem", letterSpacing: "0.2em", textTransform: "uppercase", textAlign: "center" }}>
+          <p className="mt-6 text-white/20 text-[0.6rem] tracking-[0.2em] uppercase text-center">
             Arrow keys · Click page edges to flip · Press F for Fullscreen
           </p>
         )}

@@ -13,11 +13,6 @@
   --muted: #7a6e60;
 }
 
-@theme {
-  --font-serif: Lora, Georgia, serif;
-  --font-sans: Inter, 'Helvetica Neue', sans-serif;
-}
-
 body {
   font-family: var(--font-serif);
 }

@@ -14,20 +14,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-poppins">
         <Navbar />
         <main>{children}</main>
-        <footer
-          style={{
-            padding: "2rem 1.5rem",
-            textAlign: "center",
-            color: "var(--muted)",
-            fontSize: "0.75rem",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            background: "var(--paper-dark)",
-          }}
-        >
+        <footer className="px-6 py-8 text-center text-xs tracking-widest uppercase text-[var(--muted)] bg-[var(--paper-dark)]">
           <p>© {new Date().getFullYear()} 317 Squadron &nbsp;·&nbsp; All rights reserved</p>
         </footer>
       </body>
