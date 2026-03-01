@@ -7,6 +7,12 @@ export const metadata: Metadata = {
   description: "317's monthly newsletter",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -14,13 +20,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-      </head>
       <body className="font-poppins">
         <Navbar />
         <main>{children}</main>
