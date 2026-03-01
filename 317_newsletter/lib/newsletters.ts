@@ -23,7 +23,7 @@ export const newsletters: Newsletter[] = [
     title: "Foundations of Leadership",
     date: "March 2026",
     issue: 1,
-    description: "Our inaugural issue highlights the NCO Development Weekend, L98A2 Shooting at RAF Shawbury, Duke of Edinburgh training, archery excellence, and major progress in road marching — showcasing leadership, resilience, and growth across 317 Squadron.",
+    description: "The inaugural issue of the 317 Squadron Newsletter. It's been a very busy start to 2026 with plenty of activities to recap, enjoy the first production of our new media team!",
     pdfPath: "/newsletters/issue-1.pdf",
     coverColor: "#1F2E4A",
   }
