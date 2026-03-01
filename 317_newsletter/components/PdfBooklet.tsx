@@ -33,34 +33,64 @@ export default function PdfBooklet({ newsletter }: Props) {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setError(null);
+
     (async () => {
       try {
         const pdfjsLib = await import("pdfjs-dist");
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-        const doc = await pdfjsLib.getDocument({ url: newsletter.pdfPath }).promise;
+
+        // ✅ FIX 1: Use the legacy CJS worker which works in Safari/iOS
+        // The .mjs ES module worker fails on iOS Safari WebWorker restrictions
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        
+        const doc = await pdfjsLib.getDocument({
+          url: newsletter.pdfPath,
+          // ✅ FIX 2: Disable range requests — iOS Safari struggles with them
+          disableRange: true,
+          disableStream: true,
+        }).promise;
+
         if (cancelled) return;
         setPdfDoc(doc);
         setTotalPages(doc.numPages);
         setLoading(false);
       } catch (e: any) {
         if (!cancelled) {
-          setError("Failed to load PDF");
+          console.error("PDF load error:", e);
+          setError("Failed to load PDF. Please try downloading it directly.");
           setLoading(false);
         }
       }
     })();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+    };
   }, [newsletter.pdfPath]);
 
-  const renderPage = useCallback(async (num: number, canvas: HTMLCanvasElement) => {
-    if (!pdfDoc) return;
-    const page = await pdfDoc.getPage(num);
-    const viewport = page.getViewport({ scale: 2.2 });
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    const ctx = canvas.getContext("2d")!;
-    await page.render({ canvasContext: ctx, viewport }).promise;
-  }, [pdfDoc]);
+  const renderPage = useCallback(
+    async (num: number, canvas: HTMLCanvasElement) => {
+      if (!pdfDoc) return;
+      try {
+        const page = await pdfDoc.getPage(num);
+
+        // ✅ FIX 3: Lower scale on mobile to stay under iOS canvas memory limit (~16MB)
+        // At 2.2x, an A4 page = ~3508×4961px = ~55MB — iOS Safari silently fails
+        const isMobileDevice = window.innerWidth < 768;
+        const scale = isMobileDevice ? 1.2 : 2.2;
+
+        const viewport = page.getViewport({ scale });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+      } catch (e) {
+        console.error(`Failed to render page ${num}:`, e);
+      }
+    },
+    [pdfDoc]
+  );
 
   const getVisiblePages = useCallback(() => {
     if (isMobile) return { left: null, right: currentPage };
@@ -69,7 +99,7 @@ export default function PdfBooklet({ newsletter }: Props) {
     const right = left + 1;
     return {
       left: left <= totalPages ? left : null,
-      right: right <= totalPages ? right : null
+      right: right <= totalPages ? right : null,
     };
   }, [isMobile, currentPage, totalPages]);
 
@@ -80,30 +110,36 @@ export default function PdfBooklet({ newsletter }: Props) {
     if (right && rightCanvasRef.current) renderPage(right, rightCanvasRef.current);
   }, [pdfDoc, currentPage, isMobile, loading, renderPage, getVisiblePages]);
 
-  const animateFlip = useCallback((direction: "left" | "right", onComplete: () => void) => {
-    setFlipping(direction);
-    const start = performance.now();
-    const duration = 500;
-    const tick = (now: number) => {
-      const raw = Math.min((now - start) / duration, 1);
-      const t = raw < 0.5 ? 4 * raw * raw * raw : 1 - Math.pow(-2 * raw + 2, 3) / 2;
-      setFlipProgress(t);
-      if (raw < 1) {
-        flipAnimRef.current = requestAnimationFrame(tick);
-      } else {
-        setFlipProgress(0);
-        setFlipping(null);
-        onComplete();
-      }
-    };
-    flipAnimRef.current = requestAnimationFrame(tick);
-  }, []);
+  const animateFlip = useCallback(
+    (direction: "left" | "right", onComplete: () => void) => {
+      setFlipping(direction);
+      const start = performance.now();
+      const duration = 500;
+      const tick = (now: number) => {
+        const raw = Math.min((now - start) / duration, 1);
+        const t =
+          raw < 0.5
+            ? 4 * raw * raw * raw
+            : 1 - Math.pow(-2 * raw + 2, 3) / 2;
+        setFlipProgress(t);
+        if (raw < 1) {
+          flipAnimRef.current = requestAnimationFrame(tick);
+        } else {
+          setFlipProgress(0);
+          setFlipping(null);
+          onComplete();
+        }
+      };
+      flipAnimRef.current = requestAnimationFrame(tick);
+    },
+    []
+  );
 
   const goNext = useCallback(() => {
     if (currentPage >= totalPages || flipping) return;
     animateFlip("right", () => {
-      setCurrentPage(prev => {
-        const step = isMobile ? 1 : (prev === 1 ? 1 : 2);
+      setCurrentPage((prev) => {
+        const step = isMobile ? 1 : prev === 1 ? 1 : 2;
         return Math.min(prev + step, totalPages);
       });
     });
@@ -112,8 +148,8 @@ export default function PdfBooklet({ newsletter }: Props) {
   const goPrev = useCallback(() => {
     if (currentPage <= 1 || flipping) return;
     animateFlip("left", () => {
-      setCurrentPage(prev => {
-        const step = isMobile ? 1 : (prev <= 2 ? 1 : 2);
+      setCurrentPage((prev) => {
+        const step = isMobile ? 1 : prev <= 2 ? 1 : 2;
         return Math.max(prev - step, 1);
       });
     });
@@ -131,28 +167,38 @@ export default function PdfBooklet({ newsletter }: Props) {
   }, [goNext, goPrev, isFullscreen]);
 
   const toggleFullscreen = () => {
-    const isIphone = /iPhone/i.test(navigator.userAgent);
+    const isIphone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isIphone) {
-      // Native fullscreen not supported — toggle a CSS pseudo-fullscreen instead
-      setIsFullscreen(prev => !prev);
+      setIsFullscreen((prev) => !prev);
       return;
     }
 
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen().catch(e => console.error(e));
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+    // ✅ FIX 4: Wrap in try/catch — document.fullscreenElement throws in some Safari versions
+    try {
+      if (!document.fullscreenElement) {
+        containerRef.current?.requestFullscreen().catch((e) =>
+          console.error(e)
+        );
+        setIsFullscreen(true);
+      } else {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (e) {
+      // Fullscreen not supported — fall back to CSS pseudo-fullscreen
+      setIsFullscreen((prev) => !prev);
     }
   };
 
   useEffect(() => {
     const onFsChange = () => {
-      // Only rely on this event on non-iPhone devices
-      if (!/iPhone/i.test(navigator.userAgent)) {
-        setIsFullscreen(!!document.fullscreenElement);
+      if (!/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        try {
+          setIsFullscreen(!!document.fullscreenElement);
+        } catch {
+          // ignore
+        }
       }
     };
     document.addEventListener("fullscreenchange", onFsChange);
@@ -160,7 +206,12 @@ export default function PdfBooklet({ newsletter }: Props) {
   }, []);
 
   const { left, right } = getVisiblePages();
-  const flipDeg = flipping === "right" ? flipProgress * -180 : flipping === "left" ? -180 + flipProgress * 180 : 0;
+  const flipDeg =
+    flipping === "right"
+      ? flipProgress * -180
+      : flipping === "left"
+      ? -180 + flipProgress * 180
+      : 0;
   const shadeOpacity = Math.abs(Math.sin(flipProgress * Math.PI)) * 0.4;
 
   return (
@@ -176,11 +227,11 @@ export default function PdfBooklet({ newsletter }: Props) {
           <p className="max-w-[520px] mx-auto mb-5 text-[var(--muted)] text-[0.9rem] leading-relaxed italic">
             {newsletter.description}
           </p>
-          
-            <a href={newsletter.pdfPath}
-              download
-              className="inline-flex items-center gap-1.5 px-6 py-2 bg-[var(--ink)] text-[var(--paper)] no-underline text-[0.7rem] tracking-[0.15em] uppercase"
-            >
+          <a
+            href={newsletter.pdfPath}
+            download
+            className="inline-flex items-center gap-1.5 px-6 py-2 bg-[var(--ink)] text-[var(--paper)] no-underline text-[0.7rem] tracking-[0.15em] uppercase"
+          >
             Download PDF
           </a>
         </div>
@@ -211,79 +262,155 @@ export default function PdfBooklet({ newsletter }: Props) {
           .fs-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
         `}</style>
 
-        {/* Top Control Bar */}
         <div className="w-full max-w-[1200px] flex justify-end mb-4">
           <button className="fs-btn" onClick={toggleFullscreen}>
             {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           </button>
         </div>
 
-        <div
-          className="flex relative"
-          style={{
-            width: "100%",
-            maxWidth: isMobile ? "450px" : "1200px",
-            flex: isFullscreen ? "1" : "unset",
-            aspectRatio: isFullscreen ? "unset" : isMobile ? "1 / 1.41" : "1.41 / 1",
-            perspective: "2500px",
-            boxShadow: "0 30px 60px rgba(0,0,0,0.5)",
-            marginBottom: isFullscreen ? "1rem" : "0",
-          }}
-        >
-          {!isMobile && (
+        {/* ✅ FIX 5: Show loading/error states clearly on mobile */}
+        {loading && (
+          <div className="flex-1 flex items-center justify-center text-white/60 text-sm tracking-widest uppercase">
+            Loading PDF…
+          </div>
+        )}
+
+        {error && (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-6">
+            <p className="text-white/60 text-sm">{error}</p>
+            <a
+              href={newsletter.pdfPath}
+              download
+              className="px-5 py-2 bg-white/10 text-white text-xs tracking-widest uppercase border border-white/20 rounded"
+            >
+              Download PDF Instead
+            </a>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
             <div
-              className="flex-1 bg-white border-r border-black/10 relative"
+              className="flex relative"
               style={{
-                transformOrigin: "right center",
-                transform: flipping === "left" ? `rotateY(${flipDeg}deg)` : "none",
-                zIndex: flipping === "left" ? 10 : 1,
-                transformStyle: "preserve-3d",
+                width: "100%",
+                maxWidth: isMobile ? "450px" : "1200px",
+                flex: isFullscreen ? "1" : "unset",
+                aspectRatio: isFullscreen
+                  ? "unset"
+                  : isMobile
+                  ? "1 / 1.41"
+                  : "1.41 / 1",
+                perspective: "2500px",
+                boxShadow: "0 30px 60px rgba(0,0,0,0.5)",
+                marginBottom: isFullscreen ? "1rem" : "0",
               }}
             >
-              {left
-                ? <canvas ref={leftCanvasRef} className="w-full h-full object-contain" />
-                : <div className="bg-[#f5f5f5] h-full" />
-              }
-              {flipping === "left" && (
-                <div className="absolute inset-0 pointer-events-none" style={{ background: `rgba(0,0,0,${shadeOpacity})` }} />
+              {!isMobile && (
+                <div
+                  className="flex-1 bg-white border-r border-black/10 relative"
+                  style={{
+                    transformOrigin: "right center",
+                    transform:
+                      flipping === "left" ? `rotateY(${flipDeg}deg)` : "none",
+                    zIndex: flipping === "left" ? 10 : 1,
+                    transformStyle: "preserve-3d",
+                  }}
+                >
+                  {left ? (
+                    <canvas
+                      ref={leftCanvasRef}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="bg-[#f5f5f5] h-full" />
+                  )}
+                  {flipping === "left" && (
+                    <div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background: `rgba(0,0,0,${shadeOpacity})`,
+                      }}
+                    />
+                  )}
+                </div>
               )}
+
+              <div
+                className="flex-1 bg-white relative"
+                style={{
+                  transformOrigin: "left center",
+                  transform:
+                    flipping === "right"
+                      ? `rotateY(${flipDeg}deg)`
+                      : "none",
+                  zIndex: flipping === "right" ? 10 : 1,
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                {right && (
+                  <canvas
+                    ref={rightCanvasRef}
+                    className="w-full h-full object-contain"
+                  />
+                )}
+                {flipping === "right" && (
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: `rgba(0,0,0,${shadeOpacity})`,
+                    }}
+                  />
+                )}
+              </div>
+
+              <div
+                onClick={goPrev}
+                className="absolute left-0 w-1/4 h-full cursor-w-resize z-20"
+              />
+              <div
+                onClick={goNext}
+                className="absolute right-0 w-1/4 h-full cursor-e-resize z-20"
+              />
             </div>
-          )}
 
-          <div
-            className="flex-1 bg-white relative"
-            style={{
-              transformOrigin: "left center",
-              transform: flipping === "right" ? `rotateY(${flipDeg}deg)` : "none",
-              zIndex: flipping === "right" ? 10 : 1,
-              transformStyle: "preserve-3d",
-            }}
-          >
-            {right && <canvas ref={rightCanvasRef} className="w-full h-full object-contain" />}
-            {flipping === "right" && (
-              <div className="absolute inset-0 pointer-events-none" style={{ background: `rgba(0,0,0,${shadeOpacity})` }} />
+            <div
+              className="flex items-center gap-6 text-white/60"
+              style={{
+                marginTop: isFullscreen ? "auto" : "2.5rem",
+                paddingBottom: isFullscreen ? "1rem" : "0",
+              }}
+            >
+              <button
+                className="page-turn-btn"
+                onClick={goPrev}
+                disabled={currentPage === 1 || !!flipping}
+              >
+                ←
+              </button>
+              <span className="text-[0.7rem] tracking-[0.15em] min-w-[120px] text-center uppercase">
+                {isMobile
+                  ? `PAGE ${currentPage}`
+                  : currentPage === 1
+                  ? "COVER"
+                  : `PAGES ${left}-${right}`}{" "}
+                / {totalPages}
+              </span>
+              <button
+                className="page-turn-btn"
+                onClick={goNext}
+                disabled={currentPage >= totalPages || !!flipping}
+              >
+                →
+              </button>
+            </div>
+
+            {!isFullscreen && (
+              <p className="mt-6 text-white/20 text-[0.6rem] tracking-[0.2em] uppercase text-center">
+                Arrow keys · Click page edges to flip · Press F for Fullscreen
+              </p>
             )}
-          </div>
-
-          <div onClick={goPrev} className="absolute left-0 w-1/4 h-full cursor-w-resize z-20" />
-          <div onClick={goNext} className="absolute right-0 w-1/4 h-full cursor-e-resize z-20" />
-        </div>
-
-        <div
-          className="flex items-center gap-6 text-white/60"
-          style={{ marginTop: isFullscreen ? "auto" : "2.5rem", paddingBottom: isFullscreen ? "1rem" : "0" }}
-        >
-          <button className="page-turn-btn" onClick={goPrev} disabled={currentPage === 1 || !!flipping}>←</button>
-          <span className="text-[0.7rem] tracking-[0.15em] min-w-[120px] text-center uppercase">
-            {isMobile ? `PAGE ${currentPage}` : (currentPage === 1 ? "COVER" : `PAGES ${left}-${right}`)} / {totalPages}
-          </span>
-          <button className="page-turn-btn" onClick={goNext} disabled={currentPage >= totalPages || !!flipping}>→</button>
-        </div>
-
-        {!isFullscreen && (
-          <p className="mt-6 text-white/20 text-[0.6rem] tracking-[0.2em] uppercase text-center">
-            Arrow keys · Click page edges to flip · Press F for Fullscreen
-          </p>
+          </>
         )}
       </div>
     </section>
