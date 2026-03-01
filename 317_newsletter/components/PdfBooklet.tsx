@@ -131,6 +131,14 @@ export default function PdfBooklet({ newsletter }: Props) {
   }, [goNext, goPrev, isFullscreen]);
 
   const toggleFullscreen = () => {
+    const isIphone = /iPhone/i.test(navigator.userAgent);
+
+    if (isIphone) {
+      // Native fullscreen not supported — toggle a CSS pseudo-fullscreen instead
+      setIsFullscreen(prev => !prev);
+      return;
+    }
+
     if (!document.fullscreenElement) {
       containerRef.current?.requestFullscreen().catch(e => console.error(e));
       setIsFullscreen(true);
@@ -141,7 +149,12 @@ export default function PdfBooklet({ newsletter }: Props) {
   };
 
   useEffect(() => {
-    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    const onFsChange = () => {
+      // Only rely on this event on non-iPhone devices
+      if (!/iPhone/i.test(navigator.userAgent)) {
+        setIsFullscreen(!!document.fullscreenElement);
+      }
+    };
     document.addEventListener("fullscreenchange", onFsChange);
     return () => document.removeEventListener("fullscreenchange", onFsChange);
   }, []);
@@ -181,6 +194,13 @@ export default function PdfBooklet({ newsletter }: Props) {
           padding: isFullscreen ? "1rem" : isMobile ? "1.5rem 1rem" : "3rem 2rem",
           height: isFullscreen ? "100vh" : "auto",
           minHeight: isFullscreen ? "unset" : "85vh",
+          ...(isFullscreen && {
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            height: "100dvh",
+            paddingBottom: "env(safe-area-inset-bottom, 1rem)",
+          }),
         }}
       >
         <style>{`
