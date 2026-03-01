@@ -15,12 +15,11 @@ export interface Newsletter {
   coverColor?: string; // optional accent color for the archive card
 }
 
-// 🔧 EDIT THIS ARRAY to add/remove newsletters.
 // The FIRST item in this array is displayed on the homepage.
 export const newsletters: Newsletter[] = [
   {
     id: "issue-1",
-    title: "Foundations of Leadership",
+    title: "2026 is a-go!",
     date: "March 2026",
     issue: 1,
     description: "The inaugural issue of the 317 Squadron Newsletter. It's been a very busy start to 2026 with plenty of activities to recap, enjoy the first production of our new media team!",

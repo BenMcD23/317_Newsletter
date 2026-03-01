@@ -18,7 +18,7 @@ export default function Navbar() {
       <div className="text-center px-4 pt-6 pb-3 border-b border-white/10">
         <Link href="/" className="no-underline text-inherit">
           <h1 className="masthead-title text-[clamp(2.5rem,7vw,5rem)] font-bold text-[#f5f0e8] m-0 leading-none">
-            317 Airwaves
+            Failsworth Foundry
           </h1>
           <p className="italic text-[rgba(245,240,232,0.55)] text-[0.85rem] mt-1.5 mb-0 tracking-[0.05em]">
             {newsletters[0].date} &nbsp;·&nbsp; Issue #{newsletters[0].issue}

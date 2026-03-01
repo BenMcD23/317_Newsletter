@@ -3,7 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  title: "317 Airwaves",
+  title: "Failsworth Foundry",
   description: "317's monthly newsletter",
 };
 
