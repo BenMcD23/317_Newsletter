@@ -18,6 +18,15 @@ export interface Newsletter {
 // The FIRST item in this array is displayed on the homepage.
 export const newsletters: Newsletter[] = [
   {
+    id: "issue-2",
+    title: "Guess Who's Back, Back Again?",
+    date: "May 2026",
+    issue: 2,
+    description: "Our building might be closed at the moment, but we haven't let that stop us from delivering high quality content and providing great opportunities for our cadets. Catchup on a few of the things we have been up to here in Issue 2!",
+    pdfPath: "/newsletters/issue-2.pdf",
+    coverColor: "#1F2E4A",
+  },
+  {
     id: "issue-1",
     title: "2026 is a-go!",
     date: "March 2026",
