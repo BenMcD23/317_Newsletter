@@ -1,14 +1,5 @@
 [
   {
-    "id": "issue-2",
-    "title": "test",
-    "date": "June 2026",
-    "issue": 2,
-    "description": "test321321",
-    "pdfPath": "/newsletters/issue-2.pdf",
-    "coverColor": "#1F2E4A"
-  },
-  {
     "id": "issue-1",
     "title": "2026 is a-go!",
     "date": "March 2026",
