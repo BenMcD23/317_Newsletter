@@ -1,9 +1,12 @@
 // lib/newsletters.ts
 // ─────────────────────────────────────────────────────────────
 // NEWSLETTER CONFIGURATION
-// Add new newsletters here. The first entry is shown on the homepage.
-// Place your PDF files in /public/newsletters/
+// Newsletter data lives in newsletters.json and is managed via the
+// 317 SMS site (Tools → Newsletter Management). The first entry in the
+// array is shown on the homepage. PDFs live in /public/newsletters/.
 // ─────────────────────────────────────────────────────────────
+
+import data from "./newsletters.json";
 
 export interface Newsletter {
   id: string;
@@ -16,26 +19,7 @@ export interface Newsletter {
 }
 
 // The FIRST item in this array is displayed on the homepage.
-export const newsletters: Newsletter[] = [
-  {
-    id: "issue-2",
-    title: "Guess Who's Back, Back Again?",
-    date: "May 2026",
-    issue: 2,
-    description: "Our building might be closed at the moment, but we haven't let that stop us from delivering high quality content and providing great opportunities for our cadets. Catchup on a few of the things we have been up to here in Issue 2!",
-    pdfPath: "/newsletters/issue-2.pdf",
-    coverColor: "#1F2E4A",
-  },
-  {
-    id: "issue-1",
-    title: "2026 is a-go!",
-    date: "March 2026",
-    issue: 1,
-    description: "The inaugural issue of the 317 Squadron Newsletter. It's been a very busy start to 2026 with plenty of activities to recap, enjoy the first production of our new media team!",
-    pdfPath: "/newsletters/issue-1.pdf",
-    coverColor: "#1F2E4A",
-  }
-];
+export const newsletters: Newsletter[] = data as Newsletter[];
 
 // Returns the latest (current) newsletter
 export function getCurrentNewsletter(): Newsletter {
