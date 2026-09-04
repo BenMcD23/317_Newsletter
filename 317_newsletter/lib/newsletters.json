@@ -1,5 +1,14 @@
 [
   {
+    "id": "issue-3",
+    "title": "Isn't 3 The Lucky Number?",
+    "date": "August 2026",
+    "issue": 3,
+    "description": "A catchup on the activites we did before everyone disappeared for summer!",
+    "pdfPath": "/newsletters/issue-3.pdf",
+    "coverColor": "#1F2E4A"
+  },
+  {
     "id": "issue-2",
     "title": "Guess Who's Back, Back Again?",
     "date": "May 2026",
